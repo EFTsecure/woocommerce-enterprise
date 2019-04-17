@@ -103,7 +103,7 @@ class WC_Callpay_API {
 	 * @return array|WP_Error
 	 */
 	public static function request( $request, $api = 'user/login', $method = 'POST' ) {
-        $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
         $endPoint = $protocol.self::getSetting('api_endpoint') ;
 	    $url = $endPoint . $api;
 		WC_Callpay::log( "{$api} request to ".$url . print_r( $request, true ) );
