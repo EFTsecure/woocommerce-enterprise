@@ -186,7 +186,9 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         wp_enqueue_script( 'callpay', 'https://agent.callpay.com/ext/checkout/v2/checkout.js', '', '2.0', true );
         wp_enqueue_script( 'woocommerce_callpay', plugins_url( 'assets/js/eftsecure_checkout.js', WC_CALLPAY_MAIN_FILE ), array( 'callpay' ), WC_CALLPAY_VERSION, true );
 
-        $callpay_params= ['service_url' => WC_Callpay_API::getSetting('app_domain')."/rpp-transaction/create-from-key"];
+        $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
+        $appDomain = $protocol.WC_Callpay_API::getSetting('app_domain');
+        $callpay_params = ['service_url' => $appDomain."/rpp-transaction/create-from-key"];
 
 		wp_localize_script( 'woocommerce_callpay', 'wc_callpay_params', apply_filters( 'wc_callpay_params', $callpay_params ) );
 	}

@@ -28,8 +28,8 @@ class WC_Callpay_API {
 //    ];
 
     private static $settings = [
-        'api_endpoint' => 'http://agent.callpay.com/api/v1/',
-        'app_domain' => 'http://agent.callpay.com'
+        'api_endpoint' => 'agent.callpay.com/api/v1/',
+        'app_domain' => 'agent.callpay.com'
     ];
 
     /**
@@ -99,14 +99,17 @@ class WC_Callpay_API {
 	 *
 	 * @param mixed $request
 	 * @param string $api
+	 * @param $method
 	 * @return array|WP_Error
 	 */
 	public static function request( $request, $api = 'user/login', $method = 'POST' ) {
-	    $url = self::getSetting('api_endpoint') . $api;
+        $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
+        $endPoint = $protocol.self::getSetting('api_endpoint') ;
+	    $url = $endPoint . $api;
 		WC_Callpay::log( "{$api} request to ".$url . print_r( $request, true ) );
 
 		$response = wp_remote_post(
-			self::getSetting('api_endpoint') . $api,
+            $url,
 			array(
 				'method'        => $method,
 				'headers'       => array(
@@ -179,6 +182,7 @@ class WC_Callpay_API {
     public static function get_payment_key_data($data = []) {
         $query = http_build_query($data);
         WC_Callpay::log(json_encode($data));
+        $query .= '&payment_type[]=eft&payment_type[]=credit_card';
         $response = self::request( $query, 'eft/payment-key', 'POST' );
         if ( is_wp_error( $response ) ) {
             WC_Callpay::log( 'Callpay Payment Key API Error: '.$response->get_error_message() );
