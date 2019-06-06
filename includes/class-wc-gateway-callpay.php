@@ -437,8 +437,8 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 	    if (isset($_REQUEST['callpay_transaction_id'])) {
 	        return $_REQUEST['callpay_transaction_id'];
         }
-        else if (isset($_REQUEST['callpay_transaction_id'])) {
-            return $_REQUEST['callpay_transaction_id'];
+        else if (isset($_REQUEST['transaction_id'])) {
+            return $_REQUEST['transaction_id'];
         }
         return null;
     }
