@@ -148,10 +148,6 @@ class WC_Callpay {
 			return sprintf( $message, WC_CALLPAY_MIN_WC_VER, WC_VERSION );
 		}
 
-        if (get_woocommerce_currency() != 'ZAR') {
-            return __( 'WooCommerce Enterprise - Only available for South Africa, unsupported currency detected.' );
-        }
-
 		if ( ! function_exists( 'curl_init' ) ) {
 			return __( 'WooCommerce Enterprise - cURL is not installed.', 'woocommerce-gateway-callpay' );
 		}
