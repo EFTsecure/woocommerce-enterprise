@@ -1,6 +1,6 @@
 === Woocommerce Enterprise ===
 Tags: eft,callpay,woocommerce
-Tested up to: 4.7.5
+Tested up to: 5.4.1
 License: MIT
 License URI: https://github.com/Callpay/woocommerce-enterprise/blob/master/LICENSE
 
@@ -23,3 +23,8 @@ Gateway should appear on checkout if configured with correct credentials.
 
 = 1.0 - 2019.04.16 =
 * First Release
+
+
+= 1.0.5 - 2020.05.21 =
+* Woocommerce 3.X support
+* Checkout bug fixes

@@ -109,61 +109,86 @@ jQuery( function( $ ) {
 			if ( wc_callpay_form.isCallpayModalNeeded()) {
 				var $data = jQuery('#callpay-payment-data');
 				e.preventDefault();
-                jQuery.ajax({
-                    type: 'POST',
-                    url: wc_checkout_params.checkout_url,
-                    data: jQuery('form.checkout').serialize(),
-                    dataType: 'json',
-                    success: function(result) {
-                        try {
-                            if ('success' === result.result) {
-                                var $paymentKey = result.paymentKey;
-								eftSec.checkout.init({
-                                    paymentKey: $paymentKey,
-									onLoad: function() {
-										wc_callpay_form.unblock();
-									},
-									onComplete: function(data) {
-										eftSec.checkout.hideFrame();
-										wc_callpay_form.callpay_submit = true;
-										var $form = wc_callpay_form.form;
-										if ($form.find( 'input.callpay_transaction_id' ).length > 0) {
-											$form.find('input.callpay_transaction_id').remove();
-										}
-										$form.append( '<input type="hidden" class="callpay_transaction_id" name="callpay_transaction_id" value="' + data.transaction_id + '"/>' );
-										$form.submit();
-									}
-								});
 
-                            } else if ('failure' === result.result) {
-                                throw 'Result failure';
-                            } else {
-                                throw 'Invalid response';
-                            }
-                        } catch (err) {
-                            // Reload page
-                            if (true === result.reload) {
-                                window.location.reload();
-                                return;
-                            }
+                window.paymentKey = null;
 
-                            // Trigger update in case we need a fresh nonce
-                            if (true === result.refresh) {
-                                jQuery(document.body).trigger('update_checkout');
+                if (window.paymentKey != null) {
+                    console.log('Callpay: using existing payment key');
+                    eftSec.checkout.init({
+                        paymentKey: window.paymentKey,
+                        onLoad: function () {
+                            wc_callpay_form.unblock();
+                        },
+                        onComplete: function (data) {
+                            eftSec.checkout.hideFrame();
+                            wc_callpay_form.callpay_submit = true;
+                            var $form = wc_callpay_form.form;
+                            if ($form.find('input.callpay_transaction_id').length > 0) {
+                                $form.find('input.callpay_transaction_id').remove();
                             }
-
-                            // Add new errors
-                            if (result.messages) {
-                                window.wc_checkout_form.submit_error(result.messages);
-                            } else {
-                                window.wc_checkout_form.submit_error('<div class="woocommerce-error">' + wc_checkout_params.i18n_checkout_error + '</div>');
-                            }
+                            $form.append('<input type="hidden" class="callpay_transaction_id" name="callpay_transaction_id" value="' + data.transaction_id + '"/>');
+                            $form.submit();
                         }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        wc_checkout_form.submit_error('<div class="woocommerce-error">' + errorThrown + '</div>');
-                    }
-                });
+                    });
+                }
+                else {
+                    console.log('Callpay: Setting up transaction for the first time');
+                    jQuery.ajax({
+                        type: 'POST',
+                        url: wc_checkout_params.checkout_url,
+                        data: jQuery('form.checkout').serialize(),
+                        dataType: 'json',
+                        success: function (result) {
+                            try {
+                                if ('success' === result.result) {
+                                    window.paymentKey = result.paymentKey;
+                                    eftSec.checkout.init({
+                                        paymentKey: window.paymentKey,
+                                        onLoad: function () {
+                                            wc_callpay_form.unblock();
+                                        },
+                                        onComplete: function (data) {
+                                            eftSec.checkout.hideFrame();
+                                            wc_callpay_form.callpay_submit = true;
+                                            var $form = wc_callpay_form.form;
+                                            if ($form.find('input.callpay_transaction_id').length > 0) {
+                                                $form.find('input.callpay_transaction_id').remove();
+                                            }
+                                            $form.append('<input type="hidden" class="callpay_transaction_id" name="callpay_transaction_id" value="' + data.transaction_id + '"/>');
+                                            $form.submit();
+                                        }
+                                    });
+
+                                } else if ('failure' === result.result) {
+                                    throw 'Result failure';
+                                } else {
+                                    throw 'Invalid response';
+                                }
+                            } catch (err) {
+                                // Reload page
+                                if (true === result.reload) {
+                                    window.location.reload();
+                                    return;
+                                }
+
+                                // Trigger update in case we need a fresh nonce
+                                if (true === result.refresh) {
+                                    jQuery(document.body).trigger('update_checkout');
+                                }
+
+                                // Add new errors
+                                if (result.messages) {
+                                    window.wc_checkout_form.submit_error(result.messages);
+                                } else {
+                                    window.wc_checkout_form.submit_error('<div class="woocommerce-error">' + wc_checkout_params.i18n_checkout_error + '</div>');
+                                }
+                            }
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            wc_checkout_form.submit_error('<div class="woocommerce-error">' + errorThrown + '</div>');
+                        }
+                    });
+                }
 
 				wc_callpay_form.block();
 

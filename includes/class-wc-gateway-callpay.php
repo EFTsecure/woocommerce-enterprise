@@ -340,7 +340,12 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         $order->add_order_note(sprintf( __( 'Callpay charge complete (Transaction ID: %s)', 'woocommerce-gateway-stripe' ), $response->id ));
 
         if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
-            $order->reduce_order_stock();
+            if ( version_compare( WC_VERSION, '3.0', '>=' ) ) {
+                // new version code
+                wc_reduce_stock_levels($order);
+            } else {
+                $order->reduce_order_stock();
+            }
         }
 
         $order->update_status( 'wc-processing');
@@ -353,12 +358,15 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 	    if (!empty($_GET['success']) && $_GET['success'] == 'false') {
             wc_add_notice( __( 'Unfortunately your order cannot be processed as transaction has failed. Please attempt your purchase again.', 'gateway' ), 'error' );
             wp_safe_redirect( wc_get_page_permalink( 'cart' ) );
+            WC_Callpay::log( __('Unfortunately your order cannot be processed as transaction has failed. Please attempt your purchase again.', 'woocommerce-gateway-callpay' ) );
         }
         WC_Callpay::log( __( json_encode($_REQUEST), 'woocommerce-gateway-callpay' ) );
 	    if(!isset($_REQUEST['order_id'])) {
             WC_Callpay::log( __( 'OrderID was not specified in IPN response', 'woocommerce-gateway-callpay' ) );
             throw new Exception( __( 'OrderID was not specified in IPN response', 'woocommerce-gateway-callpay' ) );
         }
+
+        WC_Callpay::log( __( 'EFT IPN response received '.json_encode($_REQUEST), 'woocommerce-gateway-callpay' ) );
 
         $order_id = $_REQUEST['order_id'];
         /**
@@ -402,11 +410,16 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
             if ($response->successful == 1) {
 
                 if ($order->has_status(array('pending', 'failed'))) {
-                    $order->reduce_order_stock();
+                    if ( version_compare( WC_VERSION, '3.0', '>=' ) ) {
+                        // new version code
+                        wc_reduce_stock_levels($order);
+                    } else {
+                        $order->reduce_order_stock();
+                    }
                 }
 
                 $order->payment_complete();
-                $order->add_order_note(sprintf(__('Gateway charge complete (Transaction ID: %s)', 'woocommerce-gateway-stripe'), $response->id));
+                $order->add_order_note(sprintf(__('Gateway charge complete (Transaction ID: %s)', 'woocommerce-gateway-callpay'), $response->id));
 
                 WC_Callpay::log("Successful payment: $response->id");
 
@@ -414,6 +427,8 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
             } else {
                 $order->add_order_note(sprintf(__('Gateway Transaction Failed: (%s)', 'woocommerce-gateway-callpay'), $response->reason));
             }
+        } else {
+            $order->add_order_note(sprintf(__('Transaction updated .. ignoring IPN.', 'woocommerce-gateway-callpay')));
         }
 
     }

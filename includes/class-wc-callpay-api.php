@@ -22,11 +22,6 @@ class WC_Callpay_API {
      */
     private static $password = '';
 
-//    private static $settings = [
-//        'api_endpoint' => 'https://services.callpay.com/api/v1/',
-//        'app_domain' => 'https://agent.callpay.com'
-//    ];
-
     private static $settings = [
         'api_endpoint' => 'agent.callpay.com/api/v1/',
         'app_domain' => 'agent.callpay.com'
@@ -122,6 +117,13 @@ class WC_Callpay_API {
 			)
 		);
 
+        if (is_wp_error($response)) {
+            WC_Callpay::log( "WP Error: ".$response->get_error_message());
+            return $response;
+        }
+
+        WC_Callpay::log( "Response: ".json_encode($response));
+
         $parsed_response = json_decode( $response['body'] );
 
         if(empty( $response['body'] ) ) {
@@ -135,12 +137,7 @@ class WC_Callpay_API {
 		}
 
 		// Handle response
-		if ( ! empty( $parsed_response->status ) && $parsed_response->status != 200 ) {
-			$error = new WP_Error( $parsed_response->status, $parsed_response->name );
-			return $error;
-		} else {
-			return $parsed_response;
-		}
+        return $parsed_response;
 	}
 
     /**
@@ -167,7 +164,6 @@ class WC_Callpay_API {
         $response = self::request('', 'gateway-transaction/'.$transaction_id, 'GET');
         if ( is_wp_error( $response ) ) {
             WC_Callpay::log( 'Callpay Transaction API Error: '.$response->get_error_message() );
-            throw new Exception('Callpay Transaction: '.$response->get_error_message());
         }
         return $response;
     }
@@ -180,9 +176,12 @@ class WC_Callpay_API {
      * @throws Exception
      */
     public static function get_payment_key_data($data = []) {
+        $data['payment_type'] = [
+            'eft',
+            'credit_card'
+        ];
         $query = http_build_query($data);
         WC_Callpay::log(json_encode($data));
-        $query .= '&payment_type[]=eft&payment_type[]=credit_card';
         $response = self::request( $query, 'eft/payment-key', 'POST' );
         if ( is_wp_error( $response ) ) {
             WC_Callpay::log( 'Callpay Payment Key API Error: '.$response->get_error_message() );

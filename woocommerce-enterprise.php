@@ -4,7 +4,7 @@
  * Description: Take bank payments on your store using Callpay.
  * Author: CallPay
  * Author URI: http://www.callpay.co.za/
- * Version: 1.0.3
+ * Version: 1.0.5
  * Text Domain: woocommerce-gateway-callpay
  * Domain Path: /languages
  *
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Required minimums and constants
  */
-define( 'WC_CALLPAY_VERSION', '1.0.3' );
+define( 'WC_CALLPAY_VERSION', '1.0.5' );
 define( 'WC_CALLPAY_MIN_WC_VER', '2.2.0' );
 define( 'WC_CALLPAY_MAIN_FILE', __FILE__ );
 define( 'WC_CALLPAY_PLUGIN_URL', untrailingslashit( plugins_url( basename( plugin_dir_path( __FILE__ ) ), basename( __FILE__ ) ) ) );
