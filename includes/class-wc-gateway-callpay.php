@@ -87,6 +87,14 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         add_action( 'woocommerce_api_wc_gateway_callpay', array( $this, 'check_ipn_response' ) );
 		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options') );
         add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+        add_action( 'woocommerce_api_wc_gateway_callpay', array( $this, 'get_card_token_data' ) );
+        add_action( 'woocommerce_api_wc_gateway_callpay', array( $this, 'store_card_token_data' ) );
+
+        // Add this action hook if you want your custom payment gateway to support it
+        do_action( 'woocommerce_credit_card_form_start', $this->id );
+
+        //Check plugin version
+        add_action('init', 'supports_tokenization');
 	}
 
 	/**
@@ -144,7 +152,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
             //add_settings_error($key, 'settings_updated', 'Password is required', 'error');
             WC_Admin_Settings::add_error( __( 'Error: You must enter a API password.', 'woocommerce-gateway-callpay' ) );
             return false;
-        }else{
+        } else{
             WC_Callpay_API::set_username($post_data['woocommerce_callpay_username']);
             WC_Callpay_API::set_password($value);
             try{
@@ -162,14 +170,27 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 	 * Payment form on checkout page
 	 */
 	public function payment_fields() {
-		echo '<div>';
-
-		if ( $this->description ) {
-			echo apply_filters( 'wc_callpay_description', wpautop( wp_kses_post( $this->description ) ) );
-		}
-
-		echo '</div>';
+            $set_token = $this->payment_option();
 	}
+
+	public function payment_option() {
+        $token = '';
+       if(WC_Callpay_API::supports_tokenization()) {
+           $userId = get_current_user_id();
+           $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
+           //$token = json_decode($tokenData);
+           $token = json_decode($tokenData);
+           if (!empty($token)) {
+               echo "<p>Please select your payment option:</p></br>Last 4 digits of saved card: <b>" . $token->last4 . "</b>";
+               echo '<div class="form-row form-row-wide">
+                </br>
+                      <span>Use this card</span>
+                      <input type="checkbox" id="savedCard" name="savedCard" value="savedCard"></br>
+                      </div>';
+           }
+       }
+        return $token;
+    }
 
 	/**
 	 * payment_scripts function.
@@ -183,7 +204,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
         add_action('wp_head', 'callpayEventJS');
 
-        wp_enqueue_script( 'callpay', 'https://agent.callpay.com/ext/checkout/v2/checkout.js', '', '2.0', true );
+        wp_enqueue_script( 'callpay', 'https://agent.callpay.lh/ext/checkout/v2/checkout.js', '', '2.0', true );
         wp_enqueue_script( 'woocommerce_callpay', plugins_url( 'assets/js/eftsecure_checkout.js', WC_CALLPAY_MAIN_FILE ), array( 'callpay' ), WC_CALLPAY_VERSION, true );
 
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -191,6 +212,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         $callpay_params = ['service_url' => $appDomain."/rpp-transaction/create-from-key"];
 
 		wp_localize_script( 'woocommerce_callpay', 'wc_callpay_params', apply_filters( 'wc_callpay_params', $callpay_params ) );
+
 	}
 
 	/**
@@ -207,6 +229,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 	public function process_payment( $order_id, $retry = true, $force_customer = false ) {
 
         ini_set('display_errors','Off'); //notices breaking json
+
 
         /**
          * @var $order WC_Order
@@ -273,17 +296,26 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         }
         //Redirect if checkout not enabled
         else if ($this->checkout_enabled === 'no') {
-            /**
-             * @var $order WC_Order
-             */
-            $pkeyData = WC_Callpay_API::get_payment_key_data([
+
+            $getPaymentKeyDataArray = [
                 'amount' => $order->get_total(),
                 'merchant_reference' => $this->get_order_id($order),
                 'notify_url' => $this->notifyUrl."&order_id=".$order_id,
                 'success_url' => $this->get_return_url( $order ),
                 'error_url' => $this->notifyUrl."&order_id=".$order_id,
                 'cancel_url' => $order->get_checkout_payment_url()
-            ]);
+            ];
+
+            if(($_POST["savedCard"]) != null) {
+                $userId = get_current_user_id();
+                $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
+                $getPaymentKeyDataArray['card_token'] = $tokenData->get_token();
+                $token2 = WC_Payment_Tokens::get_customer_default_token(1);
+                WC_Callpay::log( "Customer Cards:" . $token2 );
+                $defaultCard = WC_Payment_Tokens::get_customer_default_token($userId);
+            }
+
+            $pkeyData =  WC_Callpay_API::get_payment_key_data($getPaymentKeyDataArray);
 
             return array(
                 'result' => 'success',
@@ -294,25 +326,24 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
             /**
              * @var $order WC_Order
              */
-            $pkeyData = WC_Callpay_API::get_payment_key_data([
+
+            $getPaymentKeyDataArray = [
                 'amount' => $order->get_total(),
                 'merchant_reference' => $this->get_order_id($order),
                 'notify_url' => $this->notifyUrl."&order_id=".$order_id,
                 'success_url' => $this->get_return_url( $order ),
                 'error_url' => $this->notifyUrl."&order_id=".$order_id,
                 'cancel_url' => $order->get_checkout_payment_url()
-            ]);
+            ];
+
+            $pkeyData = WC_Callpay_API::get_payment_key_data([$getPaymentKeyDataArray]);
 
             return array(
                 'result' => 'success',
                 'paymentKey' => $pkeyData->key
             );
         }
-
-        return;
-
 	}
-
 
     /**
      * Store extra meta data for an order from a Callpay Response.
@@ -322,6 +353,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
      * @return mixed
      * @throws Exception
      */
+
 	public function process_response( $response, $order ) {
 
         WC_Callpay::log( "Processing response: " . print_r( $response, true ) );
@@ -373,7 +405,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
          * @var $order WC_Order
          */
         $order = wc_get_order( $_REQUEST['order_id'] );
-
+        $userId = $order->get_user_id();
         if ($order->get_status() == 'pending') {
 
             if (!$order) {
@@ -390,7 +422,6 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
             // Make sure the transaction is successful.
             $response = WC_Callpay_API::get_transaction_data($transactionID);
-
 
             WC_Callpay::log("Info: Begin processing IPN for payment for order $order_id for the amount of {$order->get_total()}");
             $order->add_order_note(sprintf(__('Gateway IPN received : %s', 'woocommerce-gateway-stripe'), (($response->successful) ? 'SUCCESS' : 'FAILED')));
@@ -417,6 +448,8 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
                         $order->reduce_order_stock();
                     }
                 }
+                $cardData = WC_Callpay_API::get_card_token_data($response->merchant_reference);
+                WC_Callpay_API::store_card_token_data($userId, $cardData);
 
                 $order->payment_complete();
                 $order->add_order_note(sprintf(__('Gateway charge complete (Transaction ID: %s)', 'woocommerce-gateway-callpay'), $response->id));
@@ -430,7 +463,6 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         } else {
             $order->add_order_note(sprintf(__('Transaction updated .. ignoring IPN.', 'woocommerce-gateway-callpay')));
         }
-
     }
 
 	/**

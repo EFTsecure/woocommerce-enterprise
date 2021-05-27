@@ -23,8 +23,8 @@ class WC_Callpay_API {
     private static $password = '';
 
     private static $settings = [
-        'api_endpoint' => 'agent.callpay.com/api/v1/',
-        'app_domain' => 'agent.callpay.com'
+        'api_endpoint' => 'agent.callpay.lh/api/v1/',
+        'app_domain' => 'agent.callpay.lh'
     ];
 
     /**
@@ -122,9 +122,9 @@ class WC_Callpay_API {
             return $response;
         }
 
-        WC_Callpay::log( "Response: ".json_encode($response));
+        WC_Callpay::log( "Response: ".$response['body']);
 
-        $parsed_response = json_decode( $response['body'] );
+        $parsed_response = json_decode( $response['body']);
 
         if(empty( $response['body'] ) ) {
             WC_Callpay::log( "Error Response: " . print_r( $response, true ) );
@@ -176,12 +176,15 @@ class WC_Callpay_API {
      * @throws Exception
      */
     public static function get_payment_key_data($data = []) {
-        $data['payment_type'] = [
-            'eft',
-            'credit_card'
-        ];
+        if(!empty($data['card_token'])) {
+            $data['payment_type'] = 'credit_card';
+        } else {
+            $data['payment_type'] = [
+                'eft',
+                'credit_card'
+            ];
+        }
         $query = http_build_query($data);
-        WC_Callpay::log(json_encode($data));
         $response = self::request( $query, 'eft/payment-key', 'POST' );
         if ( is_wp_error( $response ) ) {
             WC_Callpay::log( 'Callpay Payment Key API Error: '.$response->get_error_message() );
@@ -189,4 +192,45 @@ class WC_Callpay_API {
         }
         return $response;
     }
+
+    public static function get_card_token_data($reference) {
+        $response = self::request('', 'customer-token/' . $reference  , 'GET');
+        if ( is_wp_error( $response ) ) {
+            WC_Callpay::log( 'Callpay Transaction API Error: '.$response->get_error_message() );
+        }
+        return $response;
+    }
+
+    public static function store_card_token_data($userId, $cardData)
+    {
+        $tokenData = WC_Payment_Tokens::get_tokens($userId);
+        if ($tokenData == null) {
+            $pan = substr($cardData->pan, 12, 4);
+            $token = new WC_Payment_Token_CC();
+            $token->set_token($cardData->guid); // Token comes from payment processor
+            $token->set_gateway_id('callpay');
+            $token->set_last4($pan);
+            $time = explode('-', $cardData->expiry_date);
+            $token->set_expiry_year($time[1]);
+            $token->set_expiry_month($time[0]);
+            $token->set_card_type('savedCard');
+            $token->set_user_id($userId);
+            $token->save();
+            // Set this token as the users new default token
+            WC_Payment_Tokens::set_users_default($userId, $token->get_id());
+        }
+        return $token;
+    }
+
+    public static function supports_tokenization()
+    {
+        $versionValue = false;
+        if (version_compare(WC_VERSION, '2.6', '>=')) {
+            $versionValue = true;
+        }
+        return $versionValue;
+    }
+
 }
+
+
