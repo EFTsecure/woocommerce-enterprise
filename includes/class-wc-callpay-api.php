@@ -23,8 +23,8 @@ class WC_Callpay_API {
     private static $password = '';
 
     private static $settings = [
-        'api_endpoint' => 'agent.callpay.lh/api/v1/',
-        'app_domain' => 'agent.callpay.lh'
+        'api_endpoint' => 'agent.callpay.com/api/v1/',
+        'app_domain' => 'agent.callpay.com'
     ];
 
     /**
