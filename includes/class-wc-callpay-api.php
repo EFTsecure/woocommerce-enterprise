@@ -219,7 +219,6 @@ class WC_Callpay_API {
             // Set this token as the users new default token
             WC_Payment_Tokens::set_users_default($userId, $token->get_id());
         }
-        return $token;
     }
 
     public static function supports_tokenization()
