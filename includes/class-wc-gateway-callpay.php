@@ -181,11 +181,14 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
            //$token = json_decode($tokenData);
            $token = json_decode($tokenData);
            if (!empty($token)) {
-               echo "<p>Please select your payment option:</p></br>Last 4 digits of saved card: <b>" . $token->last4 . "</b>";
-               echo '<div class="form-row form-row-wide">
-                </br>
-                      <span>Use this card</span>
-                      <input type="checkbox" id="savedCard" name="savedCard" value="savedCard"></br>
+               echo "<p style='text-align: left;'>Pay with saved card?
+                        </br><b>*********". $token->last4. "</b>";
+               echo '<div class="form-row form-row-wide" style="text-align: left;">
+                      <span>Yes
+                      <input type="radio" id="savedCard" name="savedCard" value="savedCard"><br/>
+                      No
+                      <input type="radio" id="savedCard" name="savedCard" value=""></br>
+                      </span>
                       </div>';
            }
        }
@@ -204,7 +207,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
         add_action('wp_head', 'callpayEventJS');
 
-        wp_enqueue_script( 'callpay', 'https://agent.callpay.com/ext/checkout/v2/checkout.js', '', '2.0', true );
+        wp_enqueue_script( 'callpay', 'https://agent.callpay.lh/ext/checkout/v2/checkout.js', '', '2.0', true );
         wp_enqueue_script( 'woocommerce_callpay', plugins_url( 'assets/js/eftsecure_checkout.js', WC_CALLPAY_MAIN_FILE ), array( 'callpay' ), WC_CALLPAY_VERSION, true );
 
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -336,7 +339,16 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
                 'cancel_url' => $order->get_checkout_payment_url()
             ];
 
-            $pkeyData = WC_Callpay_API::get_payment_key_data([$getPaymentKeyDataArray]);
+            if(($_POST["savedCard"]) != null) {
+                $userId = get_current_user_id();
+                $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
+                $getPaymentKeyDataArray['card_token'] = $tokenData->get_token();
+                $token2 = WC_Payment_Tokens::get_customer_default_token(1);
+                WC_Callpay::log( "Customer Cards:" . $token2 );
+                $defaultCard = WC_Payment_Tokens::get_customer_default_token($userId);
+            }
+
+            $pkeyData = WC_Callpay_API::get_payment_key_data($getPaymentKeyDataArray);
 
             return array(
                 'result' => 'success',
