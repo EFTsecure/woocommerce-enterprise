@@ -203,9 +203,7 @@ class WC_Callpay_API {
 
     public static function store_card_token_data($userId, $cardData)
     {
-        $tokenData = WC_Payment_Tokens::get_customer_tokens($userId);
-        WC_Callpay::log( 'TokenData: '. $tokenData);
-        if ($tokenData == null) {
+        if (!empty($cardData->guid)) {
             $pan = substr($cardData->pan, 12, 4);
             $token = new WC_Payment_Token_CC();
             $token->set_token($cardData->guid); // Token comes from payment processor
