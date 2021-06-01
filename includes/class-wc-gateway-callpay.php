@@ -207,7 +207,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
         add_action('wp_head', 'callpayEventJS');
 
-        wp_enqueue_script( 'callpay', 'https://agent.callpay.lh/ext/checkout/v2/checkout.js', '', '2.0', true );
+        wp_enqueue_script( 'callpay', 'https://agent.callpay.com/ext/checkout/v2/checkout.js', '', '2.0', true );
         wp_enqueue_script( 'woocommerce_callpay', plugins_url( 'assets/js/eftsecure_checkout.js', WC_CALLPAY_MAIN_FILE ), array( 'callpay' ), WC_CALLPAY_VERSION, true );
 
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
