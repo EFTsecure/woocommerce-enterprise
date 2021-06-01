@@ -23,8 +23,8 @@ class WC_Callpay_API {
     private static $password = '';
 
     private static $settings = [
-        'api_endpoint' => 'agent.callpay.com/api/v1/',
-        'app_domain' => 'agent.callpay.com'
+        'api_endpoint' => 'agent.callpay.lh/api/v1/',
+        'app_domain' => 'agent.callpay.lh'
     ];
 
     /**
@@ -203,7 +203,8 @@ class WC_Callpay_API {
 
     public static function store_card_token_data($userId, $cardData)
     {
-        $tokenData = WC_Payment_Tokens::get_tokens($userId);
+        $tokenData = WC_Payment_Tokens::get_customer_tokens($userId);
+        WC_Callpay::log( 'TokenData: '. $tokenData);
         if ($tokenData == null) {
             $pan = substr($cardData->pan, 12, 4);
             $token = new WC_Payment_Token_CC();

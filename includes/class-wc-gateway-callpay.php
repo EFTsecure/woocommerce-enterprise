@@ -207,7 +207,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
         add_action('wp_head', 'callpayEventJS');
 
-        wp_enqueue_script( 'callpay', 'https://agent.callpay.com/ext/checkout/v2/checkout.js', '', '2.0', true );
+        wp_enqueue_script( 'callpay', 'https://agent.callpay.lh/ext/checkout/v2/checkout.js', '', '2.0', true );
         wp_enqueue_script( 'woocommerce_callpay', plugins_url( 'assets/js/eftsecure_checkout.js', WC_CALLPAY_MAIN_FILE ), array( 'callpay' ), WC_CALLPAY_VERSION, true );
 
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
@@ -309,12 +309,10 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
                 'cancel_url' => $order->get_checkout_payment_url()
             ];
 
-            if(($_POST["savedCard"]) != null) {
+            if(($_POST["savedCard"]) == "savedCard") {
                 $userId = get_current_user_id();
                 $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
                 $getPaymentKeyDataArray['card_token'] = $tokenData->get_token();
-                $token2 = WC_Payment_Tokens::get_customer_default_token(1);
-                WC_Callpay::log( "Customer Cards:" . $token2 );
                 $defaultCard = WC_Payment_Tokens::get_customer_default_token($userId);
             }
 
@@ -339,12 +337,10 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
                 'cancel_url' => $order->get_checkout_payment_url()
             ];
 
-            if(($_POST["savedCard"]) != null) {
+            if(($_POST["savedCard"]) == "savedCard" ) {
                 $userId = get_current_user_id();
                 $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
                 $getPaymentKeyDataArray['card_token'] = $tokenData->get_token();
-                $token2 = WC_Payment_Tokens::get_customer_default_token(1);
-                WC_Callpay::log( "Customer Cards:" . $token2 );
                 $defaultCard = WC_Payment_Tokens::get_customer_default_token($userId);
             }
 
@@ -460,8 +456,11 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
                         $order->reduce_order_stock();
                     }
                 }
+                $cardData = WC_Payment_Tokens::get_customer_tokens($userId);
                 $cardData = WC_Callpay_API::get_card_token_data($response->merchant_reference);
+
                 WC_Callpay_API::store_card_token_data($userId, $cardData);
+
 
                 $order->payment_complete();
                 $order->add_order_note(sprintf(__('Gateway charge complete (Transaction ID: %s)', 'woocommerce-gateway-callpay'), $response->id));
