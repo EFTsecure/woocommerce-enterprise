@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+    exit;
 }
 
 /**
@@ -10,65 +10,65 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
-	/**
-	 * API credentials
-	 *
-	 * @var string
-	 */
-	public $username;
+    /**
+     * API credentials
+     *
+     * @var string
+     */
+    public $username;
     public $password;
 
-	/**
-	 * Api access token
-	 *
-	 * @var string
-	 */
-	public $token;
+    /**
+     * Api access token
+     *
+     * @var string
+     */
+    public $token;
 
     /**
      * Checkout widget enabled
      */
     public $checkout_enabled;
 
-	/**
-	 * Logging enabled?
-	 *
-	 * @var bool
-	 */
-	public $logging;
+    /**
+     * Logging enabled?
+     *
+     * @var bool
+     */
+    public $logging;
 
     /**
      * Url for IPN
      *
      * @var null|string
      */
-	public $notifyUrl = null;
+    public $notifyUrl = null;
 
-	/**
-	 * Constructor
-	 */
-	public function __construct() {
-		$this->id                   = 'callpay';
-		$this->method_title         = __( 'Enterprise', 'woocommerce-gateway-callpay' );
-		$this->method_description   = __( 'Enterprise allows your customers to pay via their internet banking.', 'woocommerce-gateway-callpay' );
-		$this->has_fields           = false;
-		$this->supports             = array();
-       //    $this->view_transaction_url = 'https://callpay.callpay.com/gateway_transactions/%s';
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->id                   = 'callpay';
+        $this->method_title         = __( 'Enterprise', 'woocommerce-gateway-callpay' );
+        $this->method_description   = __( 'Enterprise allows your customers to pay via their internet banking.', 'woocommerce-gateway-callpay' );
+        $this->has_fields           = false;
+        $this->supports             = array();
+        //    $this->view_transaction_url = 'https://callpay.callpay.com/gateway_transactions/%s';
 
-		// Load the form fields.
-		$this->init_form_fields();
+        // Load the form fields.
+        $this->init_form_fields();
 
-		// Load the settings.
-		$this->init_settings();
+        // Load the settings.
+        $this->init_settings();
 
-		// Get setting values.
-		$this->title                  = $this->get_option( 'title' );
-		$this->description            = $this->get_option( 'description' );
-		$this->enabled                = $this->get_option( 'enabled' );
+        // Get setting values.
+        $this->title                  = $this->get_option( 'title' );
+        $this->description            = $this->get_option( 'description' );
+        $this->enabled                = $this->get_option( 'enabled' );
         $this->checkout_enabled       = $this->get_option( 'checkout_enabled' );
-		$this->username               = $this->get_option( 'username' );
-		$this->password               = $this->get_option( 'password' );
-		$this->logging                = 'yes' === $this->get_option( 'logging' );
+        $this->username               = $this->get_option( 'username' );
+        $this->password               = $this->get_option( 'password' );
+        $this->logging                = 'yes' === $this->get_option( 'logging' );
         $this->order_button_text = __( 'Continue with payment', 'woocommerce-gateway-callpay' );
         $this->notifyUrl = add_query_arg( 'wc-api', 'WC_Gateway_Callpay', home_url( '/' ) );
 
@@ -79,13 +79,13 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         WC_Callpay_API::set_username( $this->username );
         WC_Callpay_API::set_password( $this->password );
 
-		// Hooks.
+        // Hooks.
         if ($this->checkout_enabled === 'yes') {
             add_action('wp_enqueue_scripts', array($this, 'payment_scripts'));
         }
 
         add_action( 'woocommerce_api_wc_gateway_callpay', array( $this, 'check_ipn_response' ) );
-		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options') );
+        add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options') );
         add_action( 'admin_notices', array( $this, 'admin_notices' ) );
         add_action( 'woocommerce_api_wc_gateway_callpay', array( $this, 'get_card_token_data' ) );
         add_action( 'woocommerce_api_wc_gateway_callpay', array( $this, 'store_card_token_data' ) );
@@ -95,56 +95,56 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
 
         //Check plugin version
         add_action('init', 'supports_tokenization');
-	}
+    }
 
-	/**
-	 * Get_icon function.
-	 *
-	 * @access public
-	 * @return string
-	 */
-	public function get_icon() {
+    /**
+     * Get_icon function.
+     *
+     * @access public
+     * @return string
+     */
+    public function get_icon() {
 
-		$icon  = '';
-		return apply_filters( 'woocommerce_gateway_icon', $icon, $this->id );
-	}
+        $icon  = '';
+        return apply_filters( 'woocommerce_gateway_icon', $icon, $this->id );
+    }
 
-	/**
-	 * Check if SSL is enabled and notify the user
-	 */
-	public function admin_notices() {
-		if ( 'no' === $this->enabled ) {
-			return;
-		}
-	}
+    /**
+     * Check if SSL is enabled and notify the user
+     */
+    public function admin_notices() {
+        if ( 'no' === $this->enabled ) {
+            return;
+        }
+    }
 
-	/**
-	 * Check if this gateway is enabled
-	 */
-	public function is_available() {
-		if ( 'yes' === $this->enabled ) {
-			if ( ! $this->username || ! $this->password ) {
-				return false;
-			}
-			else if (get_woocommerce_currency() != 'ZAR') {
+    /**
+     * Check if this gateway is enabled
+     */
+    public function is_available() {
+        if ( 'yes' === $this->enabled ) {
+            if ( ! $this->username || ! $this->password ) {
                 return false;
             }
-			return true;
-		}
-		return false;
-	}
+            else if (get_woocommerce_currency() != 'ZAR') {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
 
-	/**
-	 * Initialise Gateway Settings Form Fields
-	 */
-	public function init_form_fields() {
-		$this->form_fields = include( 'settings-callpay.php' );
-	}
+    /**
+     * Initialise Gateway Settings Form Fields
+     */
+    public function init_form_fields() {
+        $this->form_fields = include( 'settings-callpay.php' );
+    }
 
     public function validate_password_field($key, $value = NULL){
 
         $post_data = $_POST;
-	    if ($value == NULL) {
+        if ($value == NULL) {
             $value = $post_data['woocommerce_callpay_'.$key];
         }
         if( isset($post_data['woocommerce_callpay_username']) && empty($value)){
@@ -166,44 +166,44 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         return $value;
     }
 
-	/**
-	 * Payment form on checkout page
-	 */
-	public function payment_fields() {
-            $set_token = $this->payment_option();
-	}
+    /**
+     * Payment form on checkout page
+     */
+    public function payment_fields() {
+        $set_token = $this->payment_option();
+    }
 
-	public function payment_option() {
+    public function payment_option() {
         $token = '';
-       if(WC_Callpay_API::supports_tokenization()) {
-           $userId = get_current_user_id();
-           $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
-           //$token = json_decode($tokenData);
-           $token = json_decode($tokenData);
-           if (!empty($token)) {
-               echo "<p style='text-align: left;'>Pay with saved card?
+        if(WC_Callpay_API::supports_tokenization()) {
+            $userId = get_current_user_id();
+            $tokenData = WC_Payment_Tokens::get_customer_default_token($userId);
+            //$token = json_decode($tokenData);
+            $token = json_decode($tokenData);
+            if (!empty($token)) {
+                echo "<p style='text-align: left;'>Pay with saved card?
                         </br><b>*********". $token->last4. "</b>";
-               echo '<div class="form-row form-row-wide" style="text-align: left;">
+                echo '<div class="form-row form-row-wide" style="text-align: left;">
                       <span>Yes
                       <input type="radio" id="savedCard" name="savedCard" value="savedCard"><br/>
                       No
                       <input type="radio" id="savedCard" name="savedCard" value=""></br>
                       </span>
                       </div>';
-           }
-       }
+            }
+        }
         return $token;
     }
 
-	/**
-	 * payment_scripts function.
-	 *
-	 * Outputs scripts used for callpay payment
-	 *
-	 * @access public
-	 */
-	public function payment_scripts() {
-		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+    /**
+     * payment_scripts function.
+     *
+     * Outputs scripts used for callpay payment
+     *
+     * @access public
+     */
+    public function payment_scripts() {
+        $suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
         add_action('wp_head', 'callpayEventJS');
 
@@ -214,22 +214,22 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         $appDomain = $protocol.WC_Callpay_API::getSetting('app_domain');
         $callpay_params = ['service_url' => $appDomain."/rpp-transaction/create-from-key"];
 
-		wp_localize_script( 'woocommerce_callpay', 'wc_callpay_params', apply_filters( 'wc_callpay_params', $callpay_params ) );
+        wp_localize_script( 'woocommerce_callpay', 'wc_callpay_params', apply_filters( 'wc_callpay_params', $callpay_params ) );
 
-	}
+    }
 
-	/**
-	 * Process the payment
-	 *
-	 * @param int  $order_id Reference.
-	 * @param bool $retry Should we retry on fail.
-	 * @param bool $force_customer Force user creation.
-	 *
-	 * @throws Exception If payment will not be accepted.
-	 *
-	 * @return mixed
-	 */
-	public function process_payment( $order_id, $retry = true, $force_customer = false ) {
+    /**
+     * Process the payment
+     *
+     * @param int  $order_id Reference.
+     * @param bool $retry Should we retry on fail.
+     * @param bool $force_customer Force user creation.
+     *
+     * @throws Exception If payment will not be accepted.
+     *
+     * @return mixed
+     */
+    public function process_payment( $order_id, $retry = true, $force_customer = false ) {
 
         ini_set('display_errors','Off'); //notices breaking json
 
@@ -351,7 +351,7 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
                 'paymentKey' => $pkeyData->key
             );
         }
-	}
+    }
 
     /**
      * Store extra meta data for an order from a Callpay Response.
@@ -362,11 +362,11 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
      * @throws Exception
      */
 
-	public function process_response( $response, $order ) {
+    public function process_response( $response, $order ) {
 
         WC_Callpay::log( "Processing response: " . print_r( $response, true ) );
 
-	    if ($response->successful == 0) {
+        if ($response->successful == 0) {
             $order->add_order_note( sprintf( __( 'Gateway Transaction Failed: (%s)', 'woocommerce-gateway-callpay' ), $response->reason ) );
             throw new Exception( __( 'Payment and order success do not correspond.', 'woocommerce-gateway-callpay' ) );
         }
@@ -391,17 +391,17 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         $order->update_status( 'wc-processing');
         WC_Callpay::log( "Successful payment: $response->id" );
 
-		return $response;
-	}
+        return $response;
+    }
 
-	public function check_ipn_response() {
-	    if (!empty($_GET['success']) && $_GET['success'] == 'false') {
+    public function check_ipn_response() {
+        if (!empty($_GET['success']) && $_GET['success'] == 'false') {
             wc_add_notice( __( 'Unfortunately your order cannot be processed as transaction has failed. Please attempt your purchase again.', 'gateway' ), 'error' );
             wp_safe_redirect( wc_get_page_permalink( 'cart' ) );
             WC_Callpay::log( __('Unfortunately your order cannot be processed as transaction has failed. Please attempt your purchase again.', 'woocommerce-gateway-callpay' ) );
         }
         WC_Callpay::log( __( json_encode($_REQUEST), 'woocommerce-gateway-callpay' ) );
-	    if(!isset($_REQUEST['order_id'])) {
+        if(!isset($_REQUEST['order_id'])) {
             WC_Callpay::log( __( 'OrderID was not specified in IPN response', 'woocommerce-gateway-callpay' ) );
             throw new Exception( __( 'OrderID was not specified in IPN response', 'woocommerce-gateway-callpay' ) );
         }
@@ -476,24 +476,24 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
         }
     }
 
-	/**
-	 * Sends the failed order email to admin
-	 *
-	 * @version 3.1.0
-	 * @since 3.1.0
-	 * @param int $order_id
-	 * @return null
-	 */
-	public function send_failed_order_email( $order_id ) {
-		$emails = WC()->mailer()->get_emails();
-		if ( ! empty( $emails ) && ! empty( $order_id ) ) {
-			$emails['WC_Email_Failed_Order']->trigger( $order_id );
-		}
-	}
+    /**
+     * Sends the failed order email to admin
+     *
+     * @version 3.1.0
+     * @since 3.1.0
+     * @param int $order_id
+     * @return null
+     */
+    public function send_failed_order_email( $order_id ) {
+        $emails = WC()->mailer()->get_emails();
+        if ( ! empty( $emails ) && ! empty( $order_id ) ) {
+            $emails['WC_Email_Failed_Order']->trigger( $order_id );
+        }
+    }
 
-	private function get_callpay_transaction_id() {
-	    if (isset($_REQUEST['callpay_transaction_id'])) {
-	        return $_REQUEST['callpay_transaction_id'];
+    private function get_callpay_transaction_id() {
+        if (isset($_REQUEST['callpay_transaction_id'])) {
+            return $_REQUEST['callpay_transaction_id'];
         }
         else if (isset($_REQUEST['transaction_id'])) {
             return $_REQUEST['transaction_id'];
@@ -502,11 +502,11 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
     }
 
     public function get_order_id($order) {
-	    if (method_exists($order, 'get_id')) {
-	        return $order->get_id();
+        if (method_exists($order, 'get_id')) {
+            return $order->get_id();
         }
         else {
-	        return $order->id;
+            return $order->id;
         }
     }
 }
