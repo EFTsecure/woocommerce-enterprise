@@ -30,7 +30,7 @@ return apply_filters( 'wc_enterprise_settings',
 			'title'       => __( 'Description', 'woocommerce-gateway-callpay' ),
 			'type'        => 'text',
 			'description' => __( 'This controls the description which the user sees during checkout.', 'woocommerce-gateway-callpay' ),
-			'default'     => __( 'Pay using your credit card details.', 'woocommerce-gateway-callpay'),
+			'default'     => __( 'Select a payment option below.', 'woocommerce-gateway-callpay'),
 			'desc_tip'    => true,
 		),
 		'username' => array(
