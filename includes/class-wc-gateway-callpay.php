@@ -424,6 +424,10 @@ class WC_Gateway_Callpay extends WC_Payment_Gateway {
             $transactionID = $this->get_callpay_transaction_id();
 
             if ($transactionID == NULL) {
+                if (isset($_REQUEST['reason']) && $_REQUEST['reason'] == 'Aborted') {
+                    $order->add_order_note('No transaction initialized on Gateway, Aborted webhook sent');
+                    $order->update_status( 'cancelled' );
+                }
                 WC_Callpay::log(__('No gateway transactionID specified in IPN response', 'woocommerce-gateway-callpay'));
                 throw new Exception(__('No gateway transactionID specified in IPN response', 'woocommerce-gateway-callpay'));
             }
